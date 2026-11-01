@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shamba Box</title>
+<style>
+  :root {
+    --paper: #f3efe6;
+    --cream: #fffdf8;
+    --ink: #1a2820;
+    --muted: #5e6d64;
+    --line: #e2d9c8;
+    --leaf: #1b6b45;
+    --deep: #0f3d28;
+    --clay: #c45c26;
+    --mist: #e7f0ea;
+    --sans: "Segoe UI", system-ui, sans-serif;
+    --display: Georgia, "Times New Roman", serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+  header { position: sticky; top: 0; background: color-mix(in srgb, var(--paper) 92%, transparent); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
+  .bar { max-width: 960px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { font-family: var(--display); font-size: 22px; }
+  nav { display: flex; gap: 4px; background: var(--cream); padding: 4px; border-radius: 999px; border: 1px solid var(--line); }
+  nav button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 12px; font: inherit; font-size: 14px; }
+  nav button.on { background: var(--leaf); color: var(--cream); }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
+  h1 { font-family: var(--display); font-weight: 500; font-size: 36px; line-height: 1.05; color: var(--deep); margin: 6px 0 8px; }
+  .kicker { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--clay); margin: 0; }
+  .sub { color: var(--muted); max-width: 40rem; line-height: 1.5; }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 860px) { .split { grid-template-columns: 320px 1fr; } .stats { grid-template-columns: repeat(3, 1fr); } .half { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--cream); border: 1px solid var(--line); border-radius: 20px; padding: 16px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  label span { float: right; font-weight: 400; color: var(--muted); }
+  input, select { width: 100%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 12px; font: inherit; font-size: 16px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button, .seg button, .rowbtn, .primary, .ghost {
+    border: 0; font: inherit; border-radius: 999px; padding: 10px 14px; font-size: 14px;
+  }
+  .chips button { background: var(--mist); }
+  .chips button.on, .seg button.on { background: var(--leaf); color: var(--cream); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
+  .stat { background: var(--leaf); color: var(--cream); border-radius: 16px; padding: 12px 14px; }
+  .stat b { display: block; font-family: var(--display); font-size: 22px; font-weight: 500; }
+  .stat small { text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; opacity: 0.8; }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding: 12px 4px; font-size: 14px; }
+  ul.list li:last-child { border-bottom: 0; }
+  .total { background: var(--deep); color: var(--cream); margin: 12px -16px -16px; padding: 14px 16px; border-radius: 0 0 20px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .total b { font-family: var(--display); font-size: 26px; font-weight: 500; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .primary { background: var(--leaf); color: var(--cream); border-radius: 12px; width: 100%; }
+  .clay { background: var(--clay); color: var(--cream); border-radius: 12px; border: 0; font: inherit; padding: 12px; }
+  .ghost { background: transparent; border: 1px solid var(--line) !important; border-radius: 12px; }
+  .alert { background: var(--clay); color: var(--cream); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; }
+  .warn, .info { background: var(--cream); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; }
+  .hide { display: none; }
+  .price-grid { display: grid; gap: 10px; }
+  @media (min-width: 700px) { .price-grid { grid-template-columns: 1fr 1fr; } }
+  button { cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">Shamba Box</div>
+    <nav>
+      <button id="tab-plan" class="on" type="button">Plan</button>
+      <button id="tab-grow" type="button">Grow</button>
+      <button id="tab-admin" type="button">Admin</button>
+    </nav>
+  </div>
+</header>
+<main>
+  <section id="view-plan"></section>
+  <section id="view-grow" class="hide"></section>
+  <section id="view-admin" class="hide"></section>
+</main>
+<script>
+const CROPS = ["lettuce","spinach","kale","strawberries","basil","dhania"];
+const DEFAULTS = {
+  tower24Cheapest:9500, tower24Best:12500, pumpCheapest:2200, pumpBest:3200,
+  airPumpCheapest:2500, airPumpBest:3800, netPot:25, cocopeat:140,
+  nutrientsCheapest:3800, nutrientsBest:5500, phMeterCheapest:2800, phMeterBest:4500,
+  lettucePrice:90, strawberryPrice:380
+};
+const FIELDS = [
+  ["tower24Cheapest","24-plant tower (cheapest)","Gear"],
+  ["tower24Best","24-plant tower (best value)","Gear"],
+  ["pumpCheapest","Water pump (cheapest)","Gear"],
+  ["pumpBest","Water pump (best value)","Gear"],
+  ["airPumpCheapest","Air pump (cheapest)","Gear"],
+  ["airPumpBest","Air pump (best value)","Gear"],
+  ["netPot","Net pot (each)","Gear"],
+  ["cocopeat","Cocopeat (per kg)","Gear"],
+  ["nutrientsCheapest","Nutrients A+B (cheapest)","Gear"],
+  ["nutrientsBest","Nutrients A+B (best value)","Gear"],
+  ["phMeterCheapest","pH + TDS meter (cheapest)","Gear"],
+  ["phMeterBest","pH + TDS meter (best value)","Gear"],
+  ["lettucePrice","Lettuce price / head","Market"],
+  ["strawberryPrice","Strawberry price / kg","Market"]
+];
+const kes = n => "KES " + Math.round(n).toLocaleString("en-KE");
+const load = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) || fallback; } catch { return fallback; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+let prices = Object.assign({}, DEFAULTS, load("shamba-prices-v1", {}));
+let plants = load("shamba-plants-v1", []);
+let state = { space:10, budget:50000, crops:["lettuce","spinach"], mode:"best_value" };
+let adminOk = sessionStorage.getItem("shamba-admin-ok") === "1";
+
+function planOf() {
+  const crops = state.crops.length ? state.crops : ["lettuce"];
+  const berry = crops.some(c => c.includes("strawberr"));
+  const leafy = crops.some(c => /lettuce|spinach|kale|sukuma|herb|basil|dhania/.test(c));
+  let density = 30, cropType = "leafy";
+  if (berry && !leafy) { density = 10; cropType = "strawberry"; }
+  else if (berry) { density = 18; cropType = "mixed"; }
+  const space = Math.max(2, Number(state.space) || 2);
+  const budget = Number(state.budget) || 0;
+  const maxBySpace = space > 15 ? Math.floor(space * density) : Math.max(1, Math.floor(space / 0.85)) * 24;
+  let plantsN = maxBySpace;
+  if (budget <= 25000) plantsN = Math.min(24, maxBySpace);
+  else if (budget <= 60000) plantsN = Math.min(60, maxBySpace);
+  else if (budget <= 120000) plantsN = Math.min(140, maxBySpace);
+  else plantsN = Math.min(400, maxBySpace);
+  plantsN = Math.max(12, plantsN);
+  const best = state.mode === "best_value";
+  const towers = Math.ceil(plantsN / 24);
+  const raw = [
+    ["PVC tower (24 plants)", towers, best ? prices.tower24Best : prices.tower24Cheapest],
+    ["Water pump", Math.max(1, Math.ceil(towers / 2)), best ? prices.pumpBest : prices.pumpCheapest],
+    ["Air pump + stones", 1, best ? prices.airPumpBest : prices.airPumpCheapest],
+    ["Net pots", plantsN + 10, prices.netPot],
+    ["Cocopeat (kg)", Math.max(5, Math.floor(plantsN / 4)), prices.cocopeat],
+    ["Nutrients A+B", Math.max(1, Math.ceil(plantsN / 35)), best ? prices.nutrientsBest : prices.nutrientsCheapest],
+    ["pH + TDS meter", 1, best ? prices.phMeterBest : prices.phMeterCheapest],
+    ["Reservoir + pipes", 1, 3500 + plantsN * 40],
+    ["Seeds + extras", 1, 2000 + plantsN * 12]
+  ];
+  const items = raw.map(([name, qty, unit]) => ({ name, qty, unit, total: qty * unit }));
+  const total = items.reduce((s, i) => s + i.total, 0);
+  let revenue = 0, running = 0;
+  if (cropType === "leafy") { revenue = plantsN * 0.7 * prices.lettucePrice; running = 3000 + plantsN * 7; }
+  else if (cropType === "strawberry") { revenue = plantsN * 0.18 * prices.strawberryPrice; running = 4000 + plantsN * 11; }
+  else { revenue = plantsN * 0.6 * 0.7 * prices.lettucePrice + plantsN * 0.4 * 0.18 * prices.strawberryPrice; running = 3500 + plantsN * 9; }
+  const profit = revenue - running;
+  return {
+    system: space <= 15 ? "Vertical towers" : "NFT channels",
+    plants: plantsN, density, items, total, remaining: budget - total, revenue, running, profit,
+    payback: profit > 0 ? total / profit : null,
+    recommendation: budget < 35000 ? "Budget is tight. Cheapest mode keeps the first harvest reachable." : "You can afford better gear. Best value lasts longer and fails less often."
+  };
+}
+
+function daysBetween(iso) {
+  const t = new Date(iso + "T00:00:00").getTime();
+  return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+}
+function expected(crop) {
+  const c = (crop || "").toLowerCase();
+  if (c.includes("strawberr")) return 60;
+  if (/lettuce|spinach|kale|sukuma/.test(c)) return 35;
+  if (/basil|dhania|herb/.test(c)) return 30;
+  return 40;
+}
+function reminders() {
+  const out = [];
+  plants.filter(p => !p.harvested).forEach(p => {
+    const left = expected(p.crop) - daysBetween(p.plantedDate);
+    if (left <= 0) out.push(["alert", p.name + " is ready to harvest"]);
+    else if (left <= 5) out.push(["warn", p.name + " — harvest in " + left + " days"]);
+    const last = p.readings.length ? p.readings[p.readings.length - 1].date.slice(0, 10) : "";
+    if (!last) out.push(["info", p.name + " has no pH reading yet"]);
+    else {
+      const since = daysBetween(last);
+      if (since >= 3) out.push(["info", p.name + " — check pH/EC (" + since + " days ago)"]);
+    }
+  });
+  return out;
+}
+
+function show(name) {
+  ["plan","grow","admin"].forEach(id => {
+    document.getElementById("view-" + id).classList.toggle("hide", id !== name);
+    document.getElementById("tab-" + id).classList.toggle("on", id === name);
+  });
+  if (name === "plan") renderPlan();
+  if (name === "grow") renderGrow();
+  if (name === "admin") renderAdmin();
+}
+
+function renderPlan() {
+  const p = planOf();
+  const root = document.getElementById("view-plan");
+  root.innerHTML = `
+    <p class="kicker">Kenya hydroponics</p>
+    <h1>Know what to buy before you spend a shilling.</h1>
+    <p class="sub">Enter space and budget. This file sizes a starter system and estimates payback. Prices live in this browser.</p>
+    <div class="grid split" style="margin-top:18px">
+      <form class="card" id="plan-form">
+        <label>Space <span>square metres</span><input id="space" type="number" min="2" value="${state.space}"></label>
+        <label>Budget <span>KES</span><input id="budget" type="number" min="5000" step="1000" value="${state.budget}"></label>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">Crops</div>
+        <div class="chips" id="crops"></div>
+        <div style="font-size:14px;font-weight:600;margin:14px 0 8px">Quality</div>
+        <div class="seg">
+          <button type="button" data-mode="cheapest" class="${state.mode==="cheapest"?"on":""}">Cheapest</button>
+          <button type="button" data-mode="best_value" class="${state.mode==="best_value"?"on":""}">Best value</button>
+        </div>
+      </form>
+      <div>
+        <div class="grid stats">
+          <div class="stat"><small>System</small><b>${p.system}</b></div>
+          <div class="stat"><small>Plants</small><b>${p.plants}</b></div>
+          <div class="stat"><small>Density</small><b>${p.density}/m²</b></div>
+        </div>
+        <div class="card" style="margin-top:12px;padding-bottom:0">
+          <strong>Shopping list</strong>
+          <ul class="list">${p.items.map(i => `<li><span>${i.name}<div class="muted">${i.qty} × ${kes(i.unit)}</div></span><b>${kes(i.total)}</b></li>`).join("")}</ul>
+          <div class="total"><span>Setup total</span><b>${kes(p.total)}</b></div>
+        </div>
+        <div class="grid half" style="margin-top:12px">
+          <div class="card"><div class="muted">${p.remaining>=0?"Left in budget":"Over budget"}</div><b style="font-family:Georgia,serif;font-size:26px">${kes(Math.abs(p.remaining))}</b></div>
+          <div class="card"><div class="muted">Payback</div><b style="font-family:Georgia,serif;font-size:26px">${p.payback==null?"Not yet":p.payback.toFixed(1)+" months"}</b></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="muted">Monthly estimate</div>
+          <p>Revenue ${kes(p.revenue)} · Running ${kes(p.running)} · Profit <b>${kes(p.profit)}</b></p>
+          <p>${p.recommendation}</p>
+        </div>
+      </div>
+    </div>`;
+  const chips = root.querySelector("#crops");
+  CROPS.forEach(c => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = c;
+    if (state.crops.includes(c)) b.className = "on";
+    b.onclick = () => {
+      state.crops = state.crops.includes(c) ? state.crops.filter(x => x !== c) : state.crops.concat(c);
+      renderPlan();
+    };
+    chips.appendChild(b);
+  });
+  root.querySelector("#space").oninput = e => { state.space = Number(e.target.value); renderPlan(); };
+  root.querySelector("#budget").oninput = e => { state.budget = Number(e.target.value); renderPlan(); };
+  root.querySelectorAll("[data-mode]").forEach(btn => btn.onclick = () => { state.mode = btn.dataset.mode; renderPlan(); });
+}
+
+function renderGrow() {
+  const income = plants.filter(p => p.harvested).reduce((s, p) => s + (Number(p.income) || 0), 0);
+  const active = plants.filter(p => !p.harvested);
+  const done = plants.filter(p => p.harvested);
+  const root = document.getElementById("view-grow");
+  root.innerHTML = `
+    <p class="kicker">Grow</p>
+    <h1>The crop in your hands</h1>
+    <div class="card" style="display:inline-block;margin-bottom:14px"><div class="muted">Harvest income</div><b style="font-family:Georgia,serif;font-size:26px">${kes(income)}</b></div>
+    <div id="rems"></div>
+    <form class="card grid" id="add" style="margin-bottom:14px">
+      <input id="gname" placeholder="Batch name" required>
+      <input id="gcrop" value="lettuce" placeholder="Crop">
+      <input id="gqty" value="24" placeholder="Count">
+      <input id="gloc" value="Tower 1" placeholder="Location">
+      <button class="primary" type="submit">Add batch</button>
+    </form>
+    <div id="batches"></div>
+    <h2 style="font-family:Georgia,serif">Harvests</h2>
+    <div class="card"><ul class="list">${done.length?done.map(p=>`<li><span>${p.name}<div class="muted">${p.harvestDate||""} · ${p.harvestWeight||"—"}</div></span><b>${kes(p.income||0)}</b></li>`).join(""):"<li>None yet</li>"}</ul></div>`;
+  const rems = root.querySelector("#rems");
+  reminders().forEach(([tone, text]) => {
+    const d = document.createElement("div");
+    d.className = tone; d.textContent = text; rems.appendChild(d);
+  });
+  root.querySelector("#add").onsubmit = e => {
+    e.preventDefault();
+    plants.unshift({
+      id: Date.now().toString(36),
+      name: root.querySelector("#gname").value.trim() || "Batch",
+      crop: root.querySelector("#gcrop").value.trim() || "lettuce",
+      quantity: root.querySelector("#gqty").value,
+      location: root.querySelector("#gloc").value,
+      plantedDate: new Date().toISOString().slice(0,10),
+      stage: "Seedling", readings: [], harvested: false
+    });
+    save("shamba-plants-v1", plants);
+    renderGrow();
+  };
+  const box = root.querySelector("#batches");
+  if (!active.length) box.innerHTML = `<p class="card">No active batches.</p>`;
+  active.forEach(p => {
+    const left = expected(p.crop) - daysBetween(p.plantedDate);
+    const el = document.createElement("div");
+    el.className = "card";
+    el.style.marginBottom = "10px";
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;gap:8px"><div><b>${p.name}</b><div class="muted">${p.crop} · ${p.location} · day ${daysBetween(p.plantedDate)}</div></div><div style="text-align:right">${p.stage}<div class="muted">${left<=0?"Ready":left+"d left"}</div></div></div>
+      <div class="chips" style="margin-top:10px">
+        ${["Seedling","Growing","Ready"].map(s=>`<button type="button" data-stage="${s}" class="${p.stage===s?"on":""}">${s}</button>`).join("")}
+      </div>
+      <div class="grid" style="margin-top:10px">
+        <input placeholder="pH" id="ph-${p.id}"><input placeholder="EC" id="ec-${p.id}">
+        <button class="primary" type="button" data-log="${p.id}">Log reading</button>
+        <input placeholder="Weight or heads" id="w-${p.id}"><input placeholder="Income KES" id="inc-${p.id}">
+        <button class="clay" type="button" data-harv="${p.id}">Mark harvested</button>
+      </div>`;
+    el.querySelectorAll("[data-stage]").forEach(b => b.onclick = () => { p.stage = b.dataset.stage; save("shamba-plants-v1", plants); renderGrow(); });
+    el.querySelector("[data-log]").onclick = () => {
+      p.readings.push({ date: new Date().toISOString(), ph: el.querySelector("#ph-"+p.id).value, ec: el.querySelector("#ec-"+p.id).value });
+      save("shamba-plants-v1", plants); renderGrow();
+    };
+    el.querySelector("[data-harv]").onclick = () => {
+      p.harvested = true;
+      p.harvestDate = new Date().toISOString().slice(0,10);
+      p.harvestWeight = el.querySelector("#w-"+p.id).value;
+      p.income = Number(el.querySelector("#inc-"+p.id).value) || 0;
+      save("shamba-plants-v1", plants); renderGrow();
+    };
+    box.appendChild(el);
+  });
+}
+
+function renderAdmin() {
+  const root = document.getElementById("view-admin");
+  if (!adminOk) {
+    root.innerHTML = `<div class="card" style="max-width:420px"><p class="kicker">Admin</p><h1>Update the price book</h1><p class="sub">Demo passcode is <b>shamba</b>. It only unlocks this browser.</p><form id="gate"><input id="code" type="password" placeholder="Passcode" style="margin:12px 0"><button class="primary" type="submit">Unlock</button><p id="gate-err" class="muted"></p></form></div>`;
+    root.querySelector("#gate").onsubmit = e => {
+      e.preventDefault();
+      if (root.querySelector("#code").value.trim().toLowerCase() === "shamba") {
+        adminOk = true; sessionStorage.setItem("shamba-admin-ok","1"); renderAdmin();
+      } else root.querySelector("#gate-err").textContent = "That passcode does not match.";
+    };
+    return;
+  }
+  const gear = FIELDS.filter(f => f[2]==="Gear");
+  const market = FIELDS.filter(f => f[2]==="Market");
+  const inputs = list => list.map(([k,label]) => `<label>${label}<input data-k="${k}" type="number" min="0" value="${prices[k]}"></label>`).join("");
+  root.innerHTML = `<p class="kicker">Admin</p><h1>Price book</h1><p class="sub">Saving updates Plan on this phone. There is no live supplier feed.</p>
+    <form id="prices">
+      <div class="card" style="margin-bottom:12px"><h2 style="font-family:Georgia,serif;margin-top:0">Gear</h2><div class="price-grid">${inputs(gear)}</div></div>
+      <div class="card"><h2 style="font-family:Georgia,serif;margin-top:0">Market</h2><div class="price-grid">${inputs(market)}</div></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="primary" style="width:auto" type="submit">Save prices</button>
+        <button class="ghost" id="reset" type="button">Reset defaults</button>
+        <span id="saved" class="muted"></span>
+      </div>
+    </form>`;
+  root.querySelector("#prices").onsubmit = e => {
+    e.preventDefault();
+    root.querySelectorAll("[data-k]").forEach(inp => { prices[inp.dataset.k] = Number(inp.value) || 0; });
+    save("shamba-prices-v1", prices);
+    root.querySelector("#saved").textContent = "Saved on this device.";
+  };
+  root.querySelector("#reset").onclick = () => { prices = Object.assign({}, DEFAULTS); save("shamba-prices-v1", prices); renderAdmin(); };
+}
+
+document.getElementById("tab-plan").onclick = () => show("plan");
+document.getElementById("tab-grow").onclick = () => show("grow");
+document.getElementById("tab-admin").onclick = () => show("admin");
+show("plan");
+</script>
+</body>
+</html>
